@@ -112,13 +112,6 @@ export function UploadTrackModal({
     try {
       progressTimer = simulateProgress();
 
-      console.log("Uploading file:", {
-        trackId: track.id,
-        fileName: selectedFile.name,
-        fileType: selectedFile.type,
-        fileSize: selectedFile.size,
-      });
-
       const response = await api.uploadTrackAudio(track.id, selectedFile);
       const updatedTrack = await response.json();
 

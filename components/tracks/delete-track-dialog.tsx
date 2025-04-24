@@ -40,13 +40,7 @@ export function DeleteTrackDialog({
     setIsDeleting(true);
     try {
       if (isMultiple) {
-        console.log(
-          `Attempting to delete ${trackIdsToDelete.length} tracks:`,
-          trackIdsToDelete
-        );
-
         const result = await api.multipleDeleteTracks(trackIdsToDelete);
-        console.log("Multiple delete result:", result);
 
         if (result.failed && result.failed.length > 0) {
           toast.warning(
@@ -63,7 +57,7 @@ export function DeleteTrackDialog({
       } else {
         const singleTrackId = trackIdsToDelete[0];
         const singleTrackTitle = tracksToDelete[0]?.title || "this track";
-        console.log(`Attempting to delete single track ID: ${singleTrackId}`);
+
         await api.deleteTrack(singleTrackId);
         toast.success("Track deleted", {
           description: `"${singleTrackTitle}" has been deleted successfully.`,

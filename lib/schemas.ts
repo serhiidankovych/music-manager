@@ -5,7 +5,7 @@ export const trackFormSchema = z.object({
   artist: z.string().min(1, "Artist is required"),
   album: z.string().optional(),
   genres: z.array(z.string()),
-  coverImage: z.string().url().optional(),
+  coverImage: z.string().optional(),
 });
 
 export type TrackFormData = z.infer<typeof trackFormSchema>;
