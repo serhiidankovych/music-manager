@@ -1,7 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      {
+        source: "/:path((?!$|tracks$).*)",
+        destination: "/",
+        permanent: false,
+      },
+    ];
+  },
+  images: {
+    remotePatterns: [
+      new URL("https://picsum.photos/**"),
+      new URL("https://i.pinimg.com/**"),
+    ],
+  },
 };
 
 export default nextConfig;
