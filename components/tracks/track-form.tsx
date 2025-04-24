@@ -361,7 +361,6 @@ export function TrackForm({
                   </FormDescription>
                   <FormMessage data-testid="error-cover-image" />
 
-                  {/* Image Preview Area */}
                   <div className="mt-3 flex items-center justify-center bg-accent p-4 min-h-[120px] border-dashed border-2 border-border rounded-md">
                     {showPreview && coverImageUrl ? (
                       <div className="relative group">
