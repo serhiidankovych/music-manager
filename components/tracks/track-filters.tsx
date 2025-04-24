@@ -122,6 +122,7 @@ export function TrackFilters({ filters, updateFilters }: TrackFiltersProps) {
           value={filters.genre || "all"}
           onValueChange={(value) => handleSimpleFilterChange("genre", value)}
           disabled={isLoading || genres.length === 0}
+          aria-disabled={isLoading || genres.length === 0}
           data-testid="filter-genre"
         >
           <SelectTrigger className="w-full">
@@ -143,6 +144,7 @@ export function TrackFilters({ filters, updateFilters }: TrackFiltersProps) {
           value={filters.artist || "all"}
           onValueChange={(value) => handleSimpleFilterChange("artist", value)}
           disabled={isLoading || artists.length === 0}
+          aria-disabled={isLoading || artists.length === 0}
           data-testid="filter-artist"
         >
           <SelectTrigger className="w-full">

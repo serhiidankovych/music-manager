@@ -84,6 +84,17 @@ export const api = {
     await handleResponse<void>(response);
   },
 
+  async multipleDeleteTracks(
+    ids: string[]
+  ): Promise<{ success: string[]; failed: string[] }> {
+    const response = await fetch(`${API_BASE_URL}/tracks/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+    return handleResponse<{ success: string[]; failed: string[] }>(response);
+  },
+
   getTrackAudioUrl(audioFileName: string | null): string | null {
     if (!audioFileName) return null;
     const encodedFileName = encodeURIComponent(audioFileName);
@@ -140,16 +151,5 @@ export const api = {
   async getGenres(): Promise<string[]> {
     const response = await fetch(`${API_BASE_URL}/genres`);
     return handleResponse<string[]>(response);
-  },
-
-  async bulkDeleteTracks(
-    ids: string[]
-  ): Promise<{ success: string[]; failed: string[] }> {
-    const response = await fetch(`${API_BASE_URL}/tracks/delete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
-    });
-    return handleResponse<{ success: string[]; failed: string[] }>(response);
   },
 };

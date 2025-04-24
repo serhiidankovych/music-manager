@@ -97,7 +97,6 @@ export function TrackModal({
     }
   };
 
- 
   if (isEditMode && !track && isOpen) {
     return null;
   }
@@ -173,7 +172,12 @@ export function TrackModal({
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" form={formId} disabled={isSubmitting}>
+            <Button
+              type="submit"
+              form={formId}
+              disabled={isSubmitting}
+              data-testid="submit-button"
+            >
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}

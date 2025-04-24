@@ -7,7 +7,7 @@ export default function Home() {
     <main className=" bg-background text-foreground dark">
       <section
         className="min-h-screen relative w-full py-32 md:py-48 overflow-hidden 
-                   bg-[url('/pattern.svg')] bg-repeat"
+                   bg-[url(/pattern.svg)] bg-repeat "
       >
         <div
           className="absolute inset-0 z-10 
@@ -22,7 +22,7 @@ export default function Home() {
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl">
               Genesis Front-End School // Case Task // Managing music tracks
-            </p>{" "}
+            </p>
             <Link href="/tracks">
               <Button className="mt-8" size="lg" variant={"candy"}>
                 Get Started

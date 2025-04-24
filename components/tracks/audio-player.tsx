@@ -1,272 +1,214 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Track } from "@/types";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Play, Pause, Volume2, VolumeX, X, Music } from "lucide-react";
+import { useWavesurfer } from "@wavesurfer/react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Track } from "@/types";
 import { api } from "@/lib/api";
-import { Play, Pause, Volume2, VolumeX, X, Music } from "lucide-react";
-import Image from "next/image";
 
 interface AudioPlayerProps {
   track: Track;
   onClose: () => void;
+  handlePlay: (track: Track) => void;
+  isPlaying: boolean;
 }
 
-export function AudioPlayer({ track, onClose }: AudioPlayerProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
+export function AudioPlayer({
+  track,
+  onClose,
+  handlePlay,
+  isPlaying,
+}: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isPlayPending, setIsPlayPending] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement>(null);
-
+  const waveformRef = useRef<HTMLDivElement>(null);
   const audioSrc = api.getTrackAudioUrl(track.audioFile);
 
+  const { wavesurfer } = useWavesurfer({
+    container: waveformRef,
+    height: 30,
+    waveColor: "#cbd5e1",
+    progressColor: "#f0b100",
+    cursorColor: "#886400",
+    cursorWidth: 1,
+    barWidth: 2,
+    barGap: 1,
+    barRadius: 2,
+    url: audioSrc ?? undefined,
+  });
+
   useEffect(() => {
-    const audioElement = audioRef.current;
-    if (!audioElement || !audioSrc) {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      setDuration(0);
-      return;
-    }
+    if (!wavesurfer) return;
 
-    setCurrentTime(0);
-    setDuration(audioElement.duration || 0);
-    setIsPlaying(false);
-    setHasError(false);
-
-    const playPromise = audioElement.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.error("Failed to autoplay:", err);
-
-          setIsPlaying(false);
-        });
-    } else {
-      setIsPlaying(true);
-    }
-
-    audioElement.volume = volume;
-    audioElement.muted = isMuted;
-  }, [audioSrc, volume, isMuted]);
-
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds) || seconds < 0) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
-
-  const handlePlayPause = () => {
-    const audio = audioRef.current;
-    if (!audio || !audioSrc || hasError) return;
-
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play().catch((err) => {
-        console.error("Failed to play:", err);
+    const subs = [
+      wavesurfer.on("ready", () => {
+        setDuration(wavesurfer.getDuration());
+        setIsReady(true);
+      }),
+      wavesurfer.on("timeupdate", setCurrentTime),
+      wavesurfer.on("finish", () => handlePlay(track)),
+      wavesurfer.on("error", (err) => {
+        console.error("Wavesurfer error:", err);
         setHasError(true);
-        setIsPlaying(false);
-      });
-    }
-  };
+      }),
+    ];
 
-  const handleTimeUpdate = () => {
-    const audio = audioRef.current;
-    if (audio && !isNaN(audio.currentTime)) {
-      setCurrentTime(audio.currentTime);
-    }
-  };
+    return () => subs.forEach((unsub) => unsub());
+  }, [wavesurfer, track, handlePlay]);
 
-  const handleLoadedMetadata = () => {
-    const audio = audioRef.current;
-    if (audio && !isNaN(audio.duration)) {
-      setDuration(audio.duration);
-    }
-  };
+  useEffect(() => {
+    if (!wavesurfer || !isReady) return;
 
-  const handleSeek = (value: number[]) => {
-    const audio = audioRef.current;
-    if (audio && audioSrc && !hasError) {
-      const newTime = value[0];
-      audio.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
+    if (isPlaying && !wavesurfer.isPlaying()) {
+      setIsPlayPending(true);
+      const playPromise = wavesurfer.play();
 
-  const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0];
-    setVolume(newVolume);
-    setIsMuted(newVolume === 0);
-
-    const audio = audioRef.current;
-    if (audio) {
-      audio.volume = newVolume;
-      audio.muted = newVolume === 0;
-    }
-  };
-
-  const toggleMute = () => {
-    const audio = audioRef.current;
-    if (audio) {
-      const newMutedState = !isMuted;
-      audio.muted = newMutedState;
-      setIsMuted(newMutedState);
-
-      if (!newMutedState && volume === 0) {
-        const defaultVolume = 0.5;
-        setVolume(defaultVolume);
-        audio.volume = defaultVolume;
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlayPending(false);
+          })
+          .catch((error) => {
+            if (error.name !== "AbortError") {
+              console.error("Play error:", error);
+            }
+            setIsPlayPending(false);
+          });
+      } else {
+        setIsPlayPending(false);
       }
+    } else if (!isPlaying && wavesurfer.isPlaying() && !isPlayPending) {
+      wavesurfer.pause();
     }
-  };
+  }, [isPlaying, wavesurfer, isReady, isPlayPending]);
 
-  const handleAudioError = (
-    e: React.SyntheticEvent<HTMLAudioElement, Event>
-  ) => {
-    console.error("Audio Error:", e.currentTarget.error);
-    setHasError(true);
-    setIsPlaying(false);
-  };
+  useEffect(() => {
+    if (wavesurfer) wavesurfer.setVolume(isMuted ? 0 : volume);
+  }, [wavesurfer, volume, isMuted]);
+
+  const handlePlayPause = useCallback(() => {
+    if (!wavesurfer || !audioSrc || hasError || !isReady || isPlayPending)
+      return;
+    handlePlay(track);
+  }, [
+    wavesurfer,
+    audioSrc,
+    hasError,
+    isReady,
+    isPlayPending,
+    handlePlay,
+    track,
+  ]);
+
+  const toggleMute = () => setIsMuted((prev) => !prev);
+
+  const formatTime = (s: number) =>
+    `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
   const canPlay = !!audioSrc && !hasError;
 
   return (
     <div
-      className="p-4 flex items-center gap-4 bg-card text-card-foreground"
-      data-testid="audio-player"
+      className="p-3 bg-card text-card-foreground  shadow-md max-w-full space-y-3 relative"
+      data-testid={`audio-player-${track.id}`}
     >
-      <audio
-        ref={audioRef}
-        src={audioSrc ?? ""}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => setIsPlaying(false)}
-        onPause={() => setIsPlaying(false)}
-        onPlay={() => setIsPlaying(true)}
-        onError={handleAudioError}
-        className="hidden"
-        preload="metadata"
-      />
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onClose}
+        className="h-7 w-7 absolute top-2 right-2"
+      >
+        <X className="h-4 w-4" />
+      </Button>
 
-      <div className="flex-shrink-0 w-12 h-12 relative rounded overflow-hidden bg-muted">
-        {track.coverImage ? (
-          <Image
-            src={track.coverImage}
-            alt={`${track.title} cover`}
-            fill
-            className="object-cover"
-            sizes="48px"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-            unoptimized
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Music className="h-6 w-6 text-muted-foreground" />
-          </div>
-        )}
+      {hasError && (
+        <p className="text-xs text-red-500 text-center">Playback error</p>
+      )}
 
-        {!track.coverImage && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Music className="h-6 w-6 text-muted-foreground" />
-          </div>
-        )}
-      </div>
-
-      <div className="flex-grow min-w-0">
-        <div className="font-medium text-sm truncate">{track.title}</div>
-        <div className="text-xs text-muted-foreground truncate">
-          {track.artist}
-        </div>
-        {hasError && (
-          <div className="text-xs text-destructive">Playback error</div>
-        )}
-        {!audioSrc && !hasError && (
-          <div className="text-xs text-muted-foreground">No audio file</div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 md:gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handlePlayPause}
-          disabled={!canPlay}
-          data-testid="play-pause-button"
-          className="h-8 w-8"
-        >
-          {isPlaying ? (
-            <Pause className="h-5 w-5" />
-          ) : (
-            <Play className="h-5 w-5" />
-          )}
-        </Button>
-
-        <div className="text-xs hidden sm:block min-w-[70px] text-center">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </div>
-
-        <div className="w-24 md:w-64">
-          <Slider
-            value={[currentTime]}
-            min={0}
-            max={duration || 1}
-            step={0.1}
-            onValueChange={handleSeek}
-            disabled={!canPlay || duration === 0}
-            data-testid="progress-slider"
-          />
-        </div>
-
-        <div className="hidden md:flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleMute}
-            disabled={!canPlay}
-            data-testid="volume-button"
-            className="h-8 w-8"
-          >
-            {isMuted ? (
-              <VolumeX className="h-4 w-4" />
+      <div className="flex items-center justify-start sm:justify-around gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-[100px]">
+          <div className="relative h-[60px] w-[60px] rounded-md overflow-hidden bg-muted flex items-center justify-center">
+            {track.coverImage ? (
+              <Image
+                src={track.coverImage}
+                alt={track.title}
+                fill
+                unoptimized
+                className="object-cover"
+              />
             ) : (
-              <Volume2 className="h-4 w-4" />
+              <Music className="w-5 h-5 text-muted-foreground" />
+            )}
+          </div>
+          <div className="text-sm">
+            <p className="font-medium leading-tight">{track.title}</p>
+            <p className="text-muted-foreground text-xs">{track.artist}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="icon"
+            onClick={handlePlayPause}
+            disabled={!canPlay || isPlayPending}
+            className={`h-8 w-8 rounded-full ${
+              isPlayPending ? "opacity-50" : ""
+            }`}
+            data-testid={
+              isPlaying ? `pause-button-${track.id}` : `play-button-${track.id}`
+            }
+          >
+            {isPlaying ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4" />
             )}
           </Button>
+          <span className="text-xs text-muted-foreground min-w-[70px] text-center">
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
 
-          <div className="w-20">
-            <Slider
-              value={[isMuted ? 0 : volume]}
-              min={0}
-              max={1}
-              step={0.01}
-              onValueChange={handleVolumeChange}
+          <div
+            ref={waveformRef}
+            className="w-[200px] rounded bg-muted overflow-hidden"
+            data-testid={`audio-progress-${track.id}`}
+          />
+
+          <div className="hidden sm:flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMute}
               disabled={!canPlay}
-              data-testid="volume-slider"
-            />
+              className="h-7 w-7"
+            >
+              {isMuted ? (
+                <VolumeX className="h-4 w-4" />
+              ) : (
+                <Volume2 className="h-4 w-4" />
+              )}
+            </Button>
+            <div className="w-20">
+              <Slider
+                value={[isMuted ? 0 : volume]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={(value) => setVolume(value[0])}
+                disabled={!canPlay}
+              />
+            </div>
           </div>
         </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          data-testid="close-player-button"
-          className="h-8 w-8"
-        >
-          <X className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );

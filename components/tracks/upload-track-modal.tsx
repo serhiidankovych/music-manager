@@ -330,7 +330,7 @@ export function UploadTrackModal({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="space-x-2">
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}

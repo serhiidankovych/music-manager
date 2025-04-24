@@ -16,31 +16,63 @@ import { api } from "@/lib/api";
 interface DeleteTrackDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  track: Track;
+  tracksToDelete: Track[];
   onSuccess: () => void;
 }
 
 export function DeleteTrackDialog({
   isOpen,
   onClose,
-  track,
+  tracksToDelete,
   onSuccess,
 }: DeleteTrackDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const isMultiple = tracksToDelete.length > 1;
+  const trackIdsToDelete = tracksToDelete.map((t) => t.id);
+
   const handleDelete = async () => {
+    if (trackIdsToDelete.length === 0) {
+      onClose();
+      return;
+    }
+
     setIsDeleting(true);
     try {
-      console.log(`Attempting to delete track ID: ${track.id}`);
-      await api.deleteTrack(track.id);
+      if (isMultiple) {
+        console.log(
+          `Attempting to delete ${trackIdsToDelete.length} tracks:`,
+          trackIdsToDelete
+        );
 
-      toast.success("Track deleted", {
-        description: `"${track.title}" has been deleted successfully.`,
-      });
+        const result = await api.multipleDeleteTracks(trackIdsToDelete);
+        console.log("Multiple delete result:", result);
+
+        if (result.failed && result.failed.length > 0) {
+          toast.warning(
+            `${result.success.length} tracks deleted, ${result.failed.length} failed.`,
+            {
+              description: `Failed IDs: ${result.failed.join(", ")}`,
+            }
+          );
+        } else {
+          toast.success(`${trackIdsToDelete.length} Tracks deleted`, {
+            description: `The selected tracks have been deleted successfully.`,
+          });
+        }
+      } else {
+        const singleTrackId = trackIdsToDelete[0];
+        const singleTrackTitle = tracksToDelete[0]?.title || "this track";
+        console.log(`Attempting to delete single track ID: ${singleTrackId}`);
+        await api.deleteTrack(singleTrackId);
+        toast.success("Track deleted", {
+          description: `"${singleTrackTitle}" has been deleted successfully.`,
+        });
+      }
 
       onSuccess();
     } catch (error) {
-      console.error(`Failed to delete track ID: ${track.id}`, error);
+      console.error(`Failed to delete track(s)`, error);
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred";
 
@@ -58,21 +90,33 @@ export function DeleteTrackDialog({
     }
   };
 
+  const dialogTitle = isMultiple
+    ? `Delete ${tracksToDelete.length} Tracks?`
+    : `Delete Track?`;
+  const dialogDescription = isMultiple
+    ? `Are you sure you want to delete these ${tracksToDelete.length} tracks? This action cannot be undone.`
+    : `Are you sure you want to delete "${
+        tracksToDelete[0]?.title || "this track"
+      }"? This action cannot be undone.`;
+
   return (
-    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
+    <AlertDialog
+      open={isOpen && tracksToDelete.length > 0}
+      onOpenChange={handleOpenChange}
+    >
       <AlertDialogContent data-testid="confirm-dialog">
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Track</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete {track?.title || "this track"}? This
-            action cannot be undone.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
+          <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting} data-testid="cancel-delete">
+          <AlertDialogCancel
+            disabled={isDeleting}
+            onClick={onClose}
+            data-testid="cancel-delete"
+          >
             Cancel
           </AlertDialogCancel>
-
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
@@ -82,7 +126,11 @@ export function DeleteTrackDialog({
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-destructive"
             data-testid="confirm-delete"
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            {isDeleting
+              ? "Deleting..."
+              : isMultiple
+              ? `Delete ${tracksToDelete.length} Tracks`
+              : "Delete Track"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

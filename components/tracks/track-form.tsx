@@ -116,6 +116,7 @@ export function TrackForm({
     <Form {...form}>
       <form
         id={id}
+        data-testid="track-form"
         onSubmit={form.handleSubmit(handleSubmit)}
         className="space-y-6"
       >
@@ -135,9 +136,10 @@ export function TrackForm({
                       {...field}
                       disabled={isSubmitting}
                       className="focus-visible:ring-primary"
+                      data-testid="input-title"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage data-testid="error-title" />
                 </FormItem>
               )}
             />
@@ -154,9 +156,10 @@ export function TrackForm({
                       placeholder="Enter artist name"
                       {...field}
                       disabled={isSubmitting}
+                      data-testid="input-artist"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage data-testid="error-artist" />
                 </FormItem>
               )}
             />
@@ -171,9 +174,10 @@ export function TrackForm({
                       placeholder="Enter album name (optional)"
                       {...field}
                       disabled={isSubmitting}
+                      data-testid="input-album"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage data-testid="error-album" />
                 </FormItem>
               )}
             />
@@ -196,12 +200,13 @@ export function TrackForm({
                         field.onChange(e);
                         setImagePreviewError(false);
                       }}
+                      data-testid="input-cover-image"
                     />
                   </FormControl>
                   <FormDescription className="text-xs">
                     Enter a valid URL for the track&apos;s cover image
                   </FormDescription>
-                  <FormMessage />
+                  <FormMessage data-testid="error-cover-image" />
 
                   <div className="flex items-center justify-center bg-accent p-4  border-dashed border-4 rounded-md">
                     {coverImageUrl &&
@@ -287,6 +292,7 @@ export function TrackForm({
                     }}
                     disabled={isSubmitting}
                     className="flex-grow"
+                    data-testid="genre-selector"
                   />
                   <Button
                     type="button"

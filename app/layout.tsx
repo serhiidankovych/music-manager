@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 
 const iBMPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -27,7 +28,8 @@ export default function RootLayout({
       <body className={`${iBMPlexSans.variable}  antialiased dark`}>
         <Header />
         {children}
-        <Toaster />
+        <Toaster data-testid="toast-container" />
+        <Footer />
       </body>
     </html>
   );

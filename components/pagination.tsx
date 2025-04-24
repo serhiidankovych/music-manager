@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -13,13 +12,11 @@ export function Pagination({
   totalPages,
   onPageChange,
 }: PaginationProps) {
- 
   if (totalPages <= 1) return null;
 
-   const renderPageButtons = () => {
+  const renderPageButtons = () => {
     const buttons = [];
 
-   
     buttons.push(
       <Button
         key="page-1"
@@ -33,9 +30,7 @@ export function Pagination({
       </Button>
     );
 
-    
     if (totalPages <= 7) {
-     
       for (let i = 2; i < totalPages; i++) {
         buttons.push(
           <Button
@@ -50,7 +45,6 @@ export function Pagination({
         );
       }
     } else {
-   
       if (currentPage > 3) {
         buttons.push(
           <div key="ellipsis-1" className="mx-1">
@@ -59,7 +53,6 @@ export function Pagination({
         );
       }
 
-   
       const startPage = Math.max(2, currentPage - 1);
       const endPage = Math.min(totalPages - 1, currentPage + 1);
 
@@ -86,7 +79,6 @@ export function Pagination({
       }
     }
 
-   
     if (totalPages > 1) {
       buttons.push(
         <Button
@@ -110,30 +102,25 @@ export function Pagination({
       className="flex items-center justify-center gap-1"
       data-testid="pagination"
     >
-     
-      <span className="text-sm text-muted-foreground mr-2">
-        Page {currentPage} of {totalPages}
-      </span>
-     
       <Button
         variant="outline"
         size="sm"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
+        data-testid="pagination-prev"
       >
         <ChevronLeft className="h-4 w-4" />
         <span className="sr-only">Previous page</span>
       </Button>
 
-   
       {renderPageButtons()}
 
-  
       <Button
         variant="outline"
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
+        data-testid="pagination-next"
       >
         <ChevronRight className="h-4 w-4" />
         <span className="sr-only">Next page</span>
